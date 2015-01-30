@@ -26,6 +26,7 @@ import com.google.inject.Provides;
 import com.proofpoint.http.server.TheAdminServlet;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.log.Logger;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 
@@ -92,9 +93,13 @@ public class JaxrsModule
     }
 
     @Provides
-    public static ResourceConfig createResourceConfig(Application application)
+    public static ResourceConfig createResourceConfig(Application application, @JaxrsInjectableProvider Set<AbstractBinder> injectableBinderProviders)
     {
-        return ResourceConfig.forApplication(application);
+        ResourceConfig config = ResourceConfig.forApplication(application);
+        for (AbstractBinder binderInstance : injectableBinderProviders) {
+            config.register(binderInstance);
+        }
+        return config;
     }
 
     @Provides

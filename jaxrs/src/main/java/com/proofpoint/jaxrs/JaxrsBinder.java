@@ -4,6 +4,7 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.Scopes.SINGLETON;
@@ -14,6 +15,7 @@ public class JaxrsBinder
     private final Multibinder<Object> resourceBinder;
     private final Multibinder<Object> adminResourceBinder;
     private final Multibinder<JaxrsBinding> keyBinder;
+    private final Multibinder<AbstractBinder> injectibleProviderBinder;
     private final Binder binder;
 
     private JaxrsBinder(Binder binder)
@@ -22,6 +24,7 @@ public class JaxrsBinder
         this.resourceBinder = newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         this.adminResourceBinder = newSetBinder(binder, Object.class, AdminJaxrsResource.class).permitDuplicates();
         this.keyBinder = newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
+        this.injectibleProviderBinder = newSetBinder(binder, AbstractBinder.class, JaxrsInjectableProvider.class);
     }
 
     public static JaxrsBinder jaxrsBinder(Binder binder)
@@ -84,5 +87,10 @@ public class JaxrsBinder
     public void registerJaxRsBinding(Key<?> key)
     {
         keyBinder.addBinding().toInstance(new JaxrsBinding(key));
+    }
+
+    public void bindInjectableProviderBinderInstance(AbstractBinder binderInstance)
+    {
+        injectibleProviderBinder.addBinding().toInstance(binderInstance);
     }
 }
