@@ -1,5 +1,6 @@
 package com.proofpoint.jaxrs;
 
+import com.google.common.base.Supplier;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Module;
@@ -13,8 +14,6 @@ import com.proofpoint.node.ApplicationNameModule;
 import com.proofpoint.node.testing.TestingNodeModule;
 import com.proofpoint.reporting.ReportingModule;
 import com.proofpoint.testing.Closeables;
-import org.glassfish.hk2.api.Factory;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -100,7 +99,7 @@ public class TestInjectableProviderBinder
                     public void configure(Binder binder)
                     {
                         jaxrsBinder(binder).bindInstance(resource);
-                        jaxrsBinder(binder).bindInjectableProviderBinderInstance(MyThingProvider.myThingInjectableProviderBinder());
+                        jaxrsBinder(binder).bindContext(MyThing.class).toInstance(new MyThingSupplier());
                     }
                 }).getInstance(TestingHttpServer.class);
     }
@@ -115,31 +114,13 @@ public class TestInjectableProviderBinder
         }
     }
 
-    public static class MyThingProvider
-        implements Factory<MyThing>
+    public static class MyThingSupplier
+        implements Supplier<MyThing>
     {
-
         @Override
-        public MyThing provide()
+        public MyThing get()
         {
             return new MyThing();
-        }
-
-        @Override
-        public void dispose(MyThing instance)
-        {
-        }
-
-        public static AbstractBinder myThingInjectableProviderBinder()
-        {
-            return new AbstractBinder()
-                {
-                    @Override
-                    protected void configure()
-                    {
-                        bindFactory(MyThingProvider.class).to(MyThing.class);
-                    }
-                };
         }
     }
 

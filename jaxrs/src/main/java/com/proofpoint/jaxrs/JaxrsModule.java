@@ -16,6 +16,7 @@
 package com.proofpoint.jaxrs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Binding;
@@ -26,6 +27,7 @@ import com.google.inject.Provides;
 import com.proofpoint.http.server.TheAdminServlet;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.log.Logger;
+import org.glassfish.hk2.api.Factory;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -42,6 +44,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.propagate;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
 
@@ -93,11 +96,18 @@ public class JaxrsModule
     }
 
     @Provides
-    public static ResourceConfig createResourceConfig(Application application, @JaxrsInjectableProvider Set<AbstractBinder> injectableBinderProviders)
+    public static ResourceConfig createResourceConfig(Application application, @JaxrsContext Map<Class, Supplier> supplierMap)
     {
         ResourceConfig config = ResourceConfig.forApplication(application);
-        for (AbstractBinder binderInstance : injectableBinderProviders) {
-            config.register(binderInstance);
+        for (final Entry<Class, Supplier> entry : supplierMap.entrySet()) {
+            config.register(new AbstractBinder()
+            {
+                @Override
+                protected void configure()
+                {
+                    bindFactory(new SupplierFactory<>(entry.getKey(), entry.getValue())).to(entry.getKey());
+                }
+            });
         }
         return config;
     }
@@ -197,6 +207,35 @@ public class JaxrsModule
         public Set<Object> getSingletons()
         {
             return jaxRsSingletons;
+        }
+    }
+
+    private static class SupplierFactory<T> implements Factory<T>
+    {
+        private Supplier<? extends T> supplier;
+
+        public SupplierFactory(Class<T> aClass, Supplier<? extends T> supplier)
+        {
+            this.supplier = supplier;
+        }
+
+        @Override
+        public T provide()
+        {
+            return supplier.get();
+        }
+
+        @Override
+        public void dispose(T o)
+        {
+            if (o instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) o).close();
+                }
+                catch (Exception e) {
+                    throw propagate(e);
+                }
+            }
         }
     }
 }

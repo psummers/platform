@@ -1,13 +1,15 @@
 package com.proofpoint.jaxrs;
 
+import com.google.common.base.Supplier;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.inject.Scopes.SINGLETON;
+import static com.google.inject.multibindings.MapBinder.newMapBinder;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 public class JaxrsBinder
@@ -15,8 +17,8 @@ public class JaxrsBinder
     private final Multibinder<Object> resourceBinder;
     private final Multibinder<Object> adminResourceBinder;
     private final Multibinder<JaxrsBinding> keyBinder;
-    private final Multibinder<AbstractBinder> injectibleProviderBinder;
     private final Binder binder;
+    private final MapBinder<Class, Supplier> contextBinder;
 
     private JaxrsBinder(Binder binder)
     {
@@ -24,7 +26,7 @@ public class JaxrsBinder
         this.resourceBinder = newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         this.adminResourceBinder = newSetBinder(binder, Object.class, AdminJaxrsResource.class).permitDuplicates();
         this.keyBinder = newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
-        this.injectibleProviderBinder = newSetBinder(binder, AbstractBinder.class, JaxrsInjectableProvider.class);
+        contextBinder = newMapBinder(binder, Class.class, Supplier.class, JaxrsContext.class);
     }
 
     public static JaxrsBinder jaxrsBinder(Binder binder)
@@ -89,8 +91,7 @@ public class JaxrsBinder
         keyBinder.addBinding().toInstance(new JaxrsBinding(key));
     }
 
-    public void bindInjectableProviderBinderInstance(AbstractBinder binderInstance)
-    {
-        injectibleProviderBinder.addBinding().toInstance(binderInstance);
+    public <T> LinkedContextBindingBuilder<T> bindContext(Class<T> type) {
+        return new LinkedContextBindingBuilder<>(type, contextBinder);
     }
 }
