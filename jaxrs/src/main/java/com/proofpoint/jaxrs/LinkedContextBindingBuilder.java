@@ -21,14 +21,12 @@ import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 
-import java.lang.reflect.Constructor;
-
 public class LinkedContextBindingBuilder<T>
 {
     private final Class<T> type;
-    private final MapBinder<Class, Supplier> contextBinder;
+    private final MapBinder<Class<?>, Supplier<?>> contextBinder;
 
-    LinkedContextBindingBuilder(Class<T> type, MapBinder<Class, Supplier> contextBinder)
+    LinkedContextBindingBuilder(Class<T> type, MapBinder<Class<?>, Supplier<?>> contextBinder)
     {
         this.type = type;
         this.contextBinder = contextBinder;
@@ -74,16 +72,5 @@ public class LinkedContextBindingBuilder<T>
             Key<? extends javax.inject.Provider<? extends Supplier<? extends T>>> providerKey)
     {
         contextBinder.addBinding(type).toProvider(providerKey);
-    }
-
-    public <S extends Supplier<? extends T>> void toConstructor(Constructor<S> constructor)
-    {
-        contextBinder.addBinding(type).toConstructor(constructor);
-    }
-
-    public <S extends Supplier<? extends T>>  void toConstructor(
-            Constructor<S> constructor, TypeLiteral<? extends S> type)
-    {
-        contextBinder.addBinding(this.type).toConstructor(constructor, type);
     }
 }
