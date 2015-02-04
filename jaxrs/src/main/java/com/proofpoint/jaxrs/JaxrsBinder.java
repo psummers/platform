@@ -18,7 +18,7 @@ public class JaxrsBinder
     private final Multibinder<Object> adminResourceBinder;
     private final Multibinder<JaxrsBinding> keyBinder;
     private final Binder binder;
-    private final MapBinder<Class, Supplier> contextBinder;
+    private final MapBinder<Class<?>, Supplier<?>> contextBinder;
 
     private JaxrsBinder(Binder binder)
     {
@@ -26,7 +26,7 @@ public class JaxrsBinder
         this.resourceBinder = newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         this.adminResourceBinder = newSetBinder(binder, Object.class, AdminJaxrsResource.class).permitDuplicates();
         this.keyBinder = newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
-        contextBinder = newMapBinder(binder, Class.class, Supplier.class, JaxrsContext.class);
+        contextBinder = newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<Supplier<?>>() {}, JaxrsContext.class);
     }
 
     public static JaxrsBinder jaxrsBinder(Binder binder)

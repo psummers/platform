@@ -96,18 +96,12 @@ public class JaxrsModule
     }
 
     @Provides
-    public static ResourceConfig createResourceConfig(Application application, @JaxrsContext Map<Class, Supplier> supplierMap)
+    @SuppressWarnings("unchecked")
+    public static ResourceConfig createResourceConfig(Application application, @JaxrsContext Map<Class<?>, Supplier<?>> supplierMap)
     {
         ResourceConfig config = ResourceConfig.forApplication(application);
-        for (final Entry<Class, Supplier> entry : supplierMap.entrySet()) {
-            config.register(new AbstractBinder()
-            {
-                @Override
-                protected void configure()
-                {
-                    bindFactory(new SupplierFactory<>(entry.getKey(), entry.getValue())).to(entry.getKey());
-                }
-            });
+        for (final Entry<Class<?>, Supplier<?>> entry : supplierMap.entrySet()) {
+            config.register(new SupplierBinder(entry.getKey()).to(entry.getValue()));
         }
         return config;
     }
@@ -210,11 +204,32 @@ public class JaxrsModule
         }
     }
 
+    private static class SupplierBinder<T>
+    {
+        private final Class<T> type;
+
+        public SupplierBinder(Class<T> type)
+        {
+            this.type = type;
+        }
+
+        public AbstractBinder to(final Supplier<? extends T> supplier)
+        {
+            return new AbstractBinder()
+            {
+                @Override
+                protected void configure()
+                {
+                    bindFactory(new SupplierFactory<>(type, supplier)).to(type);                }
+            };
+        }
+    }
+
     private static class SupplierFactory<T> implements Factory<T>
     {
         private Supplier<? extends T> supplier;
 
-        public SupplierFactory(Class<T> aClass, Supplier<? extends T> supplier)
+        public SupplierFactory(Class<T> type, Supplier<? extends T> supplier)
         {
             this.supplier = supplier;
         }
