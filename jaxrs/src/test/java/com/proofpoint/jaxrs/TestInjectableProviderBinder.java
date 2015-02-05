@@ -18,7 +18,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
 import javax.management.MBeanServer;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -30,6 +32,7 @@ import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
 import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class TestInjectableProviderBinder
 {
@@ -73,7 +76,7 @@ public class TestInjectableProviderBinder
                             .build();
         StringResponse response = client.execute(request, createStringResponseHandler());
         assertEquals(response.getStatusCode(), Status.OK.getStatusCode(), "Status code");
-        assertEquals(response.getBody(), MYTHING_MESSAGE, response.getBody());
+        assertTrue(response.getBody().contains(MYTHING_MESSAGE), response.getBody());
     }
 
     private static TestingHttpServer createServer(final MyResource resource)
@@ -99,7 +102,7 @@ public class TestInjectableProviderBinder
                     public void configure(Binder binder)
                     {
                         jaxrsBinder(binder).bindInstance(resource);
-                        jaxrsBinder(binder).bindContext(MyThing.class).toInstance(new MyThingSupplier());
+                        jaxrsBinder(binder).bindContext(MyThing.class).to(MyThingSupplier.class);
                     }
                 }).getInstance(TestingHttpServer.class);
     }
@@ -117,18 +120,33 @@ public class TestInjectableProviderBinder
     public static class MyThingSupplier
         implements Supplier<MyThing>
     {
+        private final HttpServletRequest request;
+
+        @Inject
+        public MyThingSupplier(HttpServletRequest request)
+        {
+            this.request = request;
+        }
+
         @Override
         public MyThing get()
         {
-            return new MyThing();
+            return new MyThing(request.getServletPath());
         }
     }
 
-    private static class MyThing
+    public static class MyThing
     {
+        private final String path;
+
+        public MyThing(String path)
+        {
+            this.path = path;
+        }
+
         public String getMessage()
         {
-            return MYTHING_MESSAGE;
+            return String.format("%s %s", path, MYTHING_MESSAGE);
         }
     }
 }
