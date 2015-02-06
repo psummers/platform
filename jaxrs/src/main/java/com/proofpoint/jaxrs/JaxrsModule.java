@@ -27,6 +27,7 @@ import com.proofpoint.http.server.TheAdminServlet;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.log.Logger;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 
@@ -99,6 +100,7 @@ public class JaxrsModule
         for (AbstractBinder binderInstance : injectableBinderProviders) {
             config.register(binderInstance);
         }
+        config.register(MultiPartFeature.class);
         return config;
     }
 
