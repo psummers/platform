@@ -120,33 +120,21 @@ public class TestInjectableProviderBinder
     public static class MyThingSupplier
         implements Supplier<MyThing>
     {
-        private final HttpServletRequest request;
-
-        @Inject
-        public MyThingSupplier(HttpServletRequest request)
-        {
-            this.request = request;
-        }
-
         @Override
         public MyThing get()
         {
-            return new MyThing(request.getServletPath());
+            return new MyThing();
         }
     }
 
     public static class MyThing
     {
-        private final String path;
-
-        public MyThing(String path)
-        {
-            this.path = path;
-        }
+        @Inject
+        private HttpServletRequest request;
 
         public String getMessage()
         {
-            return String.format("%s %s", path, MYTHING_MESSAGE);
+            return String.format("%s %s", request.getServletPath(), MYTHING_MESSAGE);
         }
     }
 }
