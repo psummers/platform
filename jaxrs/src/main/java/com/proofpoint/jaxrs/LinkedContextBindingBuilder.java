@@ -21,6 +21,8 @@ import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 
+import static com.google.inject.Scopes.SINGLETON;
+
 public class LinkedContextBindingBuilder<T>
 {
     private final Class<T> type;
@@ -34,17 +36,17 @@ public class LinkedContextBindingBuilder<T>
     
     public void to(Class<? extends Supplier<? extends T>> implementation)
     {
-        contextBinder.addBinding(type).to(implementation);
+        contextBinder.addBinding(type).to(implementation).in(SINGLETON);
     }
 
     public void to(TypeLiteral<? extends Supplier<? extends T>> implementation)
     {
-        contextBinder.addBinding(type).to(implementation);
+        contextBinder.addBinding(type).to(implementation).in(SINGLETON);
     }
 
     public void to(Key<? extends Supplier<? extends T>> targetKey)
     {
-        contextBinder.addBinding(type).to(targetKey);
+        contextBinder.addBinding(type).to(targetKey).in(SINGLETON);
     }
 
     public void toInstance(Supplier<? extends T> supplier) {
@@ -53,24 +55,24 @@ public class LinkedContextBindingBuilder<T>
 
     public void toProvider(Provider<? extends Supplier<? extends T>> provider)
     {
-        contextBinder.addBinding(type).toProvider(provider);
+        contextBinder.addBinding(type).toProvider(provider).in(SINGLETON);
     }
 
     public void toProvider(
             Class<? extends javax.inject.Provider<? extends Supplier<? extends T>>> providerType)
     {
-        contextBinder.addBinding(type).toProvider(providerType);
+        contextBinder.addBinding(type).toProvider(providerType).in(SINGLETON);
     }
 
     public void toProvider(
             TypeLiteral<? extends javax.inject.Provider<? extends Supplier<? extends T>>> providerType)
     {
-        contextBinder.addBinding(type).toProvider(providerType);
+        contextBinder.addBinding(type).toProvider(providerType).in(SINGLETON);
     }
 
     public void toProvider(
             Key<? extends javax.inject.Provider<? extends Supplier<? extends T>>> providerKey)
     {
-        contextBinder.addBinding(type).toProvider(providerKey);
+        contextBinder.addBinding(type).toProvider(providerKey).in(SINGLETON);
     }
 }
