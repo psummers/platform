@@ -19,7 +19,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
 import javax.management.MBeanServer;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -31,19 +33,20 @@ import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
 import static com.proofpoint.jaxrs.JaxrsModule.explicitJaxrsModule;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class TestInjectableProviderBinder
 {
-    MyResource resource;
+    InjectedResource resource;
     TestingHttpServer server;
     JettyHttpClient client;
-    private static final String MYTHING_MESSAGE = "Hello, World!";
+    private static final String INJECTED_MESSAGE = "Hello, World!";
 
     @BeforeMethod
     public void setup()
             throws Exception
     {
-        resource = new MyResource();
+        resource = new InjectedResource();
         server = createServer(resource);
 
         client = new JettyHttpClient();
@@ -69,15 +72,15 @@ public class TestInjectableProviderBinder
     public void testInjectableProvider()
     {
         Request request = Request.builder()
-                            .setUri(server.getBaseUrl().resolve("/mything"))
+                            .setUri(server.getBaseUrl().resolve("/injectedcontext"))
                             .setMethod("GET")
                             .build();
         StringResponse response = client.execute(request, createStringResponseHandler());
         assertEquals(response.getStatusCode(), Status.OK.getStatusCode(), "Status code");
-        assertEquals(response.getBody(), MYTHING_MESSAGE, response.getBody());
+        assertTrue(response.getBody().contains(INJECTED_MESSAGE), response.getBody());
     }
 
-    private static TestingHttpServer createServer(final MyResource resource)
+    private static TestingHttpServer createServer(final InjectedResource resource)
     {
         return Guice.createInjector(
                 new ApplicationNameModule("test-application"),
@@ -100,54 +103,69 @@ public class TestInjectableProviderBinder
                     public void configure(Binder binder)
                     {
                         jaxrsBinder(binder).bindInstance(resource);
-                        jaxrsBinder(binder).bindInjectableProviderBinderInstance(MyThingProvider.myThingInjectableProviderBinder());
+                        jaxrsBinder(binder).registerContextBinderInstance(InjectedContextObjectProvider.injectedContextBinder());
                     }
                 }).getInstance(TestingHttpServer.class);
     }
 
-    @Path("/mything")
-    public static class MyResource
+    @Path("/injectedcontext")
+    public static class InjectedResource
     {
         @GET
-        public Response getContextInjectable(@Context MyThing thing)
+        public Response getInjectectedContext(@Context InjectedContextObject thing)
         {
             return Response.ok(thing.getMessage()).build();
         }
     }
 
-    public static class MyThingProvider
-        implements Factory<MyThing>
+    public static class InjectedContextObjectProvider
+        implements Factory<InjectedContextObject>
     {
 
-        @Override
-        public MyThing provide()
+        private final HttpServletRequest request;
+
+        @Inject
+        public InjectedContextObjectProvider(HttpServletRequest request)
         {
-            return new MyThing();
+            this.request = request;
         }
 
         @Override
-        public void dispose(MyThing instance)
+        public InjectedContextObject provide()
+        {
+            return new InjectedContextObject(request.toString());
+        }
+
+        @Override
+        public void dispose(InjectedContextObject instance)
         {
         }
 
-        public static AbstractBinder myThingInjectableProviderBinder()
+        public static AbstractBinder injectedContextBinder()
         {
             return new AbstractBinder()
                 {
                     @Override
                     protected void configure()
                     {
-                        bindFactory(MyThingProvider.class).to(MyThing.class);
+                        bindFactory(InjectedContextObjectProvider.class).to(InjectedContextObject.class);
                     }
                 };
         }
     }
 
-    private static class MyThing
+    private static class InjectedContextObject
     {
+        private final String path;
+
+        public InjectedContextObject(String path)
+        {
+            this.path = path;
+        }
+
         public String getMessage()
         {
-            return MYTHING_MESSAGE;
+            return String.format("%s: %s", path, INJECTED_MESSAGE);
         }
     }
 }

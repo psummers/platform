@@ -15,7 +15,7 @@ public class JaxrsBinder
     private final Multibinder<Object> resourceBinder;
     private final Multibinder<Object> adminResourceBinder;
     private final Multibinder<JaxrsBinding> keyBinder;
-    private final Multibinder<AbstractBinder> injectibleProviderBinder;
+    private final Multibinder<AbstractBinder> contextBinder;
     private final Binder binder;
 
     private JaxrsBinder(Binder binder)
@@ -24,7 +24,7 @@ public class JaxrsBinder
         this.resourceBinder = newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         this.adminResourceBinder = newSetBinder(binder, Object.class, AdminJaxrsResource.class).permitDuplicates();
         this.keyBinder = newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
-        this.injectibleProviderBinder = newSetBinder(binder, AbstractBinder.class, JaxrsInjectableProvider.class);
+        this.contextBinder = newSetBinder(binder, AbstractBinder.class, JaxrsInjectableProvider.class);
     }
 
     public static JaxrsBinder jaxrsBinder(Binder binder)
@@ -89,8 +89,8 @@ public class JaxrsBinder
         keyBinder.addBinding().toInstance(new JaxrsBinding(key));
     }
 
-    public void bindInjectableProviderBinderInstance(AbstractBinder binderInstance)
+    public void registerContextBinderInstance(AbstractBinder binderInstance)
     {
-        injectibleProviderBinder.addBinding().toInstance(binderInstance);
+        contextBinder.addBinding().toInstance(binderInstance);
     }
 }
