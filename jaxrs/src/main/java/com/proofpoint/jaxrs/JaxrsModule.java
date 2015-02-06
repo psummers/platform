@@ -28,8 +28,11 @@ import com.proofpoint.http.server.TheAdminServlet;
 import com.proofpoint.http.server.TheServlet;
 import com.proofpoint.log.Logger;
 import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.spi.Container;
+import org.glassfish.jersey.server.spi.ContainerLifecycleListener;
 import org.glassfish.jersey.servlet.ServletContainer;
 
 import javax.servlet.Servlet;
@@ -42,9 +45,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Throwables.propagate;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.proofpoint.jaxrs.JaxrsBinder.jaxrsBinder;
 
@@ -54,6 +57,7 @@ public class JaxrsModule
     private static final Logger log = Logger.get(JaxrsModule.class);
 
     private final boolean requireExplicitBindings;
+    private final AtomicReference<ServiceLocator> locatorReference = new AtomicReference<>();
 
     public JaxrsModule()
     {
@@ -97,9 +101,27 @@ public class JaxrsModule
 
     @Provides
     @SuppressWarnings("unchecked")
-    public static ResourceConfig createResourceConfig(Application application, @JaxrsContext Map<Class<?>, Supplier<?>> supplierMap)
+    public ResourceConfig createResourceConfig(Application application, @JaxrsContext Map<Class<?>, Supplier<?>> supplierMap)
     {
         ResourceConfig config = ResourceConfig.forApplication(application);
+        config.register(new ContainerLifecycleListener()
+        {
+            @Override
+            public void onStartup(Container container)
+            {
+                locatorReference.set(container.getApplicationHandler().getServiceLocator());
+            }
+
+            @Override
+            public void onReload(Container container)
+            {
+            }
+
+            @Override
+            public void onShutdown(Container container)
+            {
+            }
+        });
         for (final Entry<Class<?>, Supplier<?>> entry : supplierMap.entrySet()) {
             config.register(new SupplierBinder(entry.getKey()).to(entry.getValue()));
         }
@@ -204,7 +226,7 @@ public class JaxrsModule
         }
     }
 
-    private static class SupplierBinder<T>
+    private class SupplierBinder<T>
     {
         private final Class<T> type;
 
@@ -220,37 +242,37 @@ public class JaxrsModule
                 @Override
                 protected void configure()
                 {
-                    bindFactory(new SupplierFactory<>(type, supplier)).to(type);                }
+                    bindFactory(new SupplierFactory<>(type, supplier, locatorReference)).to(type);
+                }
             };
         }
     }
 
     private static class SupplierFactory<T> implements Factory<T>
     {
-        private Supplier<? extends T> supplier;
+        private final Supplier<? extends T> supplier;
+        private final AtomicReference<ServiceLocator> locatorReference;
 
-        public SupplierFactory(Class<T> type, Supplier<? extends T> supplier)
+        public SupplierFactory(Class<T> type, Supplier<? extends T> supplier, AtomicReference<ServiceLocator> locatorReference)
         {
             this.supplier = supplier;
+            this.locatorReference = locatorReference;
         }
 
         @Override
         public T provide()
         {
-            return supplier.get();
+            T object = supplier.get();
+            ServiceLocator locator = locatorReference.get();
+            locator.inject(object);
+            locator.postConstruct(object);
+            return object;
         }
 
         @Override
         public void dispose(T o)
         {
-            if (o instanceof AutoCloseable) {
-                try {
-                    ((AutoCloseable) o).close();
-                }
-                catch (Exception e) {
-                    throw propagate(e);
-                }
-            }
+            locatorReference.get().preDestroy(o);
         }
     }
 }
