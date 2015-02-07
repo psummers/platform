@@ -34,18 +34,18 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class TestInjectableProviderBinder
+public class TestInjectedContext
 {
-    MyResource resource;
+    InjectedResource resource;
     TestingHttpServer server;
     JettyHttpClient client;
-    private static final String MYTHING_MESSAGE = "Hello, World!";
+    private static final String INJECTED_MESSSAGE = "Hello, World!";
 
     @BeforeMethod
     public void setup()
             throws Exception
     {
-        resource = new MyResource();
+        resource = new InjectedResource();
         server = createServer(resource);
 
         client = new JettyHttpClient();
@@ -71,15 +71,15 @@ public class TestInjectableProviderBinder
     public void testInjectableProvider()
     {
         Request request = Request.builder()
-                            .setUri(server.getBaseUrl().resolve("/mything"))
+                            .setUri(server.getBaseUrl().resolve("/injectedresource"))
                             .setMethod("GET")
                             .build();
         StringResponse response = client.execute(request, createStringResponseHandler());
         assertEquals(response.getStatusCode(), Status.OK.getStatusCode(), "Status code");
-        assertTrue(response.getBody().contains(MYTHING_MESSAGE), response.getBody());
+        assertTrue(response.getBody().contains(INJECTED_MESSSAGE), response.getBody());
     }
 
-    private static TestingHttpServer createServer(final MyResource resource)
+    private static TestingHttpServer createServer(final InjectedResource resource)
     {
         return Guice.createInjector(
                 new ApplicationNameModule("test-application"),
@@ -102,39 +102,39 @@ public class TestInjectableProviderBinder
                     public void configure(Binder binder)
                     {
                         jaxrsBinder(binder).bindInstance(resource);
-                        jaxrsBinder(binder).bindContext(MyThing.class).to(MyThingSupplier.class);
+                        jaxrsBinder(binder).bindContext(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
                     }
                 }).getInstance(TestingHttpServer.class);
     }
 
-    @Path("/mything")
-    public static class MyResource
+    @Path("/injectedresource")
+    public static class InjectedResource
     {
         @GET
-        public Response getContextInjectable(@Context MyThing thing)
+        public Response getContextInjectable(@Context InjectedContextObject injectedContextObject)
         {
-            return Response.ok(thing.getMessage()).build();
+            return Response.ok(injectedContextObject.getMessage()).build();
         }
     }
 
-    public static class MyThingSupplier
-        implements Supplier<MyThing>
+    public static class InjectedContextObjectSupplier
+        implements Supplier<InjectedContextObject>
     {
         @Override
-        public MyThing get()
+        public InjectedContextObject get()
         {
-            return new MyThing();
+            return new InjectedContextObject();
         }
     }
 
-    public static class MyThing
+    public static class InjectedContextObject
     {
         @Inject
         private HttpServletRequest request;
 
         public String getMessage()
         {
-            return String.format("%s %s", request.getServletPath(), MYTHING_MESSAGE);
+            return String.format("%s %s", request.getServletPath(), INJECTED_MESSSAGE);
         }
     }
 }
