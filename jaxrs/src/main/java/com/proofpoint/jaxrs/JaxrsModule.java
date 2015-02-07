@@ -101,7 +101,7 @@ public class JaxrsModule
 
     @Provides
     @SuppressWarnings("unchecked")
-    public ResourceConfig createResourceConfig(Application application, @JaxrsContext Map<Class<?>, Supplier<?>> supplierMap)
+    public ResourceConfig createResourceConfig(Application application, @JaxrsInjectionProvider Map<Class<?>, Supplier<?>> supplierMap)
     {
         ResourceConfig config = ResourceConfig.forApplication(application);
         config.register(new ContainerLifecycleListener()
@@ -123,7 +123,7 @@ public class JaxrsModule
             }
         });
         for (final Entry<Class<?>, Supplier<?>> entry : supplierMap.entrySet()) {
-            config.register(new SupplierBinder(entry.getKey()).to(entry.getValue()));
+            config.register(new InjectionProviderBinder(entry.getKey()).to(entry.getValue()));
         }
         return config;
     }
@@ -226,11 +226,11 @@ public class JaxrsModule
         }
     }
 
-    private class SupplierBinder<T>
+    private class InjectionProviderBinder<T>
     {
         private final Class<T> type;
 
-        public SupplierBinder(Class<T> type)
+        public InjectionProviderBinder(Class<T> type)
         {
             this.type = type;
         }
@@ -242,18 +242,18 @@ public class JaxrsModule
                 @Override
                 protected void configure()
                 {
-                    bindFactory(new SupplierFactory<>(type, supplier, locatorReference)).to(type);
+                    bindFactory(new InjectionProviderFactory<>(type, supplier, locatorReference)).to(type);
                 }
             };
         }
     }
 
-    private static class SupplierFactory<T> implements Factory<T>
+    private static class InjectionProviderFactory<T> implements Factory<T>
     {
         private final Supplier<? extends T> supplier;
         private final AtomicReference<ServiceLocator> locatorReference;
 
-        public SupplierFactory(Class<T> type, Supplier<? extends T> supplier, AtomicReference<ServiceLocator> locatorReference)
+        public InjectionProviderFactory(Class<T> type, Supplier<? extends T> supplier, AtomicReference<ServiceLocator> locatorReference)
         {
             this.supplier = supplier;
             this.locatorReference = locatorReference;

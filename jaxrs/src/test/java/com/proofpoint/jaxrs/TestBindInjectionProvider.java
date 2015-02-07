@@ -34,7 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class TestInjectedContext
+public class TestBindInjectionProvider
 {
     InjectedResource resource;
     TestingHttpServer server;
@@ -68,7 +68,7 @@ public class TestInjectedContext
     }
 
     @Test
-    public void testInjectableProvider()
+    public void testInjectionProvider()
     {
         Request request = Request.builder()
                             .setUri(server.getBaseUrl().resolve("/injectedresource"))
@@ -108,7 +108,7 @@ public class TestInjectedContext
                                         public void configure(Binder binder)
                                         {
                                             jaxrsBinder(binder).bindInstance(resource);
-                                            jaxrsBinder(binder).bindContext(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
+                                            jaxrsBinder(binder).bindInjectionProvider(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
                                         }
                                     });
                     }
