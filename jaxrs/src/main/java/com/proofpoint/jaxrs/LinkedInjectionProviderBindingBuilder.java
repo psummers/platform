@@ -21,56 +21,58 @@ import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 
-public class LinkedContextBindingBuilder<T>
+import static com.google.inject.Scopes.SINGLETON;
+
+public class LinkedInjectionProviderBindingBuilder<T>
 {
     private final Class<T> type;
-    private final MapBinder<Class<?>, Supplier<?>> contextBinder;
+    private final MapBinder<Class<?>, Supplier<?>> injectionProviderBinder;
 
-    LinkedContextBindingBuilder(Class<T> type, MapBinder<Class<?>, Supplier<?>> contextBinder)
+    LinkedInjectionProviderBindingBuilder(Class<T> type, MapBinder<Class<?>, Supplier<?>> injectionProviderBinder)
     {
         this.type = type;
-        this.contextBinder = contextBinder;
+        this.injectionProviderBinder = injectionProviderBinder;
     }
     
     public void to(Class<? extends Supplier<? extends T>> implementation)
     {
-        contextBinder.addBinding(type).to(implementation);
+        injectionProviderBinder.addBinding(type).to(implementation).in(SINGLETON);
     }
 
     public void to(TypeLiteral<? extends Supplier<? extends T>> implementation)
     {
-        contextBinder.addBinding(type).to(implementation);
+        injectionProviderBinder.addBinding(type).to(implementation).in(SINGLETON);
     }
 
     public void to(Key<? extends Supplier<? extends T>> targetKey)
     {
-        contextBinder.addBinding(type).to(targetKey);
+        injectionProviderBinder.addBinding(type).to(targetKey).in(SINGLETON);
     }
 
     public void toInstance(Supplier<? extends T> supplier) {
-        contextBinder.addBinding(type).toInstance(supplier);
+        injectionProviderBinder.addBinding(type).toInstance(supplier);
     }
 
     public void toProvider(Provider<? extends Supplier<? extends T>> provider)
     {
-        contextBinder.addBinding(type).toProvider(provider);
+        injectionProviderBinder.addBinding(type).toProvider(provider).in(SINGLETON);
     }
 
     public void toProvider(
             Class<? extends javax.inject.Provider<? extends Supplier<? extends T>>> providerType)
     {
-        contextBinder.addBinding(type).toProvider(providerType);
+        injectionProviderBinder.addBinding(type).toProvider(providerType).in(SINGLETON);
     }
 
     public void toProvider(
             TypeLiteral<? extends javax.inject.Provider<? extends Supplier<? extends T>>> providerType)
     {
-        contextBinder.addBinding(type).toProvider(providerType);
+        injectionProviderBinder.addBinding(type).toProvider(providerType).in(SINGLETON);
     }
 
     public void toProvider(
             Key<? extends javax.inject.Provider<? extends Supplier<? extends T>>> providerKey)
     {
-        contextBinder.addBinding(type).toProvider(providerKey);
+        injectionProviderBinder.addBinding(type).toProvider(providerKey).in(SINGLETON);
     }
 }

@@ -18,7 +18,7 @@ public class JaxrsBinder
     private final Multibinder<Object> adminResourceBinder;
     private final Multibinder<JaxrsBinding> keyBinder;
     private final Binder binder;
-    private final MapBinder<Class<?>, Supplier<?>> contextBinder;
+    private final MapBinder<Class<?>, Supplier<?>> injectionProviderBinder;
 
     private JaxrsBinder(Binder binder)
     {
@@ -26,7 +26,7 @@ public class JaxrsBinder
         this.resourceBinder = newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         this.adminResourceBinder = newSetBinder(binder, Object.class, AdminJaxrsResource.class).permitDuplicates();
         this.keyBinder = newSetBinder(binder, JaxrsBinding.class, JaxrsResource.class).permitDuplicates();
-        contextBinder = newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<Supplier<?>>() {}, JaxrsContext.class);
+        injectionProviderBinder = newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<Supplier<?>>() {}, JaxrsInjectionProvider.class);
     }
 
     public static JaxrsBinder jaxrsBinder(Binder binder)
@@ -91,7 +91,7 @@ public class JaxrsBinder
         keyBinder.addBinding().toInstance(new JaxrsBinding(key));
     }
 
-    public <T> LinkedContextBindingBuilder<T> bindContext(Class<T> type) {
-        return new LinkedContextBindingBuilder<>(type, contextBinder);
+    public <T> LinkedInjectionProviderBindingBuilder<T> bindInjectionProvider(Class<T> type) {
+        return new LinkedInjectionProviderBindingBuilder<>(type, injectionProviderBinder);
     }
 }
