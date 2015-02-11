@@ -102,7 +102,7 @@ public class TestInjectedContext
                     public void configure(Binder binder)
                     {
                         jaxrsBinder(binder).bindInstance(resource);
-                        jaxrsBinder(binder).bindContext(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
+                        jaxrsBinder(binder).bindInjectionProvider(InjectedContextObject.class).to(InjectedContextObjectSupplier.class);
                     }
                 }).getInstance(TestingHttpServer.class);
     }
